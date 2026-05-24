@@ -125,9 +125,15 @@ async function transactionWithRetry<T>(
 }
 
 function isRetryableTransactionError(cause: unknown) {
+  if (!(cause instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
   return (
-    cause instanceof Prisma.PrismaClientKnownRequestError &&
-    cause.code === "P2034"
+    cause.code === "P2034" ||
+    (cause.code === "P2010" &&
+      typeof cause.meta?.code === "string" &&
+      cause.meta.code === "40001")
   );
 }
 
