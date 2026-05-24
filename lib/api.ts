@@ -51,15 +51,16 @@ export async function withIdempotency(
   const key = getIdempotencyKey(request);
 
   if (!key) {
-    return json(await prisma.$transaction((tx) => handler(tx), {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    }));
+    return json(
+      await transactionWithRetry(prisma, (tx) => handler(tx)),
+    );
   }
 
   const bodyHash = hashBody(body);
   const path = request.nextUrl.pathname;
 
-  const result = await prisma.$transaction(
+  const result = await transactionWithRetry(
+    prisma,
     async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${scope}:${key}`}, 0))`;
 
@@ -97,10 +98,37 @@ export async function withIdempotency(
 
       return next;
     },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
 
   return json(result);
+}
+
+async function transactionWithRetry<T>(
+  prisma: PrismaClient,
+  callback: (tx: TxClient) => Promise<T>,
+) {
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await prisma.$transaction(callback, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (cause) {
+      if (attempt === maxAttempts || !isRetryableTransactionError(cause)) {
+        throw cause;
+      }
+    }
+  }
+
+  throw new Error("Transaction retry loop exhausted.");
+}
+
+function isRetryableTransactionError(cause: unknown) {
+  return (
+    cause instanceof Prisma.PrismaClientKnownRequestError &&
+    cause.code === "P2034"
+  );
 }
 
 export async function parseJson(request: NextRequest) {
