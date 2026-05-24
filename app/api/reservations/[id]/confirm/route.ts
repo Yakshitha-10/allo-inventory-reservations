@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { error, json, withIdempotency } from "@/lib/api";
+import { error, withIdempotency } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { confirmReservation, serializeReservation } from "@/lib/reservations";
 

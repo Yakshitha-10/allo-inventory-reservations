@@ -1,4 +1,4 @@
-import { Prisma, ReservationStatus } from "@prisma/client";
+import { ReservationStatus } from "@prisma/client";
 import type { DbClient } from "@/lib/api";
 
 const RESERVATION_TTL_MINUTES = 10;

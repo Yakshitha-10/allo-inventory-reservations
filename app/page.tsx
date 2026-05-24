@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type Product = {
@@ -73,6 +74,7 @@ export default function Home() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadProducts();
   }, []);
 
@@ -177,7 +179,13 @@ export default function Home() {
 
             return (
               <article className="product-card" key={product.id}>
-                <img src={product.imageUrl} alt="" />
+                <Image
+                  src={product.imageUrl}
+                  alt=""
+                  width={900}
+                  height={600}
+                  sizes="(max-width: 700px) 100vw, 280px"
+                />
                 <div className="product-body">
                   <div>
                     <p className="sku">{product.sku}</p>
@@ -243,7 +251,7 @@ function ReservationPanel({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
